@@ -15,7 +15,7 @@ fi
 
 rc=${PIPESTATUS[0]}
 
-if [ -t 0 -a -t 1 ]; then
+if [[ -t 0 && -t 1 ]]; then
     exit "$rc"
 fi
 
