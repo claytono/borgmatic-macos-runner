@@ -1,0 +1,36 @@
+#!/bin/bash
+
+LOG=/tmp/borgmatic.txt
+
+PATH=/usr/local/bin:$PATH
+
+if [[ $(pmset -g ps | head -1) =~ "Battery Power" ]]; then
+    echo "On battery power, skipping backup"
+    exit 0
+fi
+
+/usr/local/bin/borgmatic \
+    -c ~/.borgmatic/config "$@" \
+    2>&1 |tee $LOG
+
+rc=${PIPESTATUS[0]}
+
+if [ -t 0 -a -t 1 ]; then
+    exit "$rc"
+fi
+
+if [ "$rc" -eq 0 ]; then
+    terminal-notifier -message "Borgmatic completed successfully" \
+        -timeout 60
+    exit 0
+fi
+
+# Error encountered, display dialog offering to show log message.
+ANSWER="$(terminal-notifier \
+    -title "Borgmatic" \
+    -message "Borgmatic encountered an error, log in $LOG" \
+    -actions "Show Log" 2>&1 )"
+
+if [[ $ANSWER == *"@Show Log"* || $ANSWER == *"@CONTENTCLICKED"* ]]; then
+    open /tmp/borgmatic.txt
+fi
